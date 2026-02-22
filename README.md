@@ -1,23 +1,19 @@
-# ADE Core - Agentic Data Engineering Framework
+# ADE Core
 
-**ADE** (Analytics Data Environment) makes the implicit context of data platforms explicit and queryable — enabling AI agents to reason about architectures that span multiple tools, teams, and technologies.
+**ADE** extracts metadata from your data platforms and exposes it to AI agents via MCP.
 
-## Why Data Engineering Needs a Different Approach
+## What it does
 
-In **software engineering**, AI agents can work end-to-end: the code is in a repo, dependencies are declared, environments are homogeneous. Tools like Claude Code and Cursor thrive here.
+- **Extract** → Pull metadata from Databricks notebooks, jobs, and source code
+- **Search** → Find any data asset across your platforms from Claude
+- **Trace** → Analyze dependencies between notebooks and tables
+- **Understand** → Let AI reason about your architecture without reading 100 files
 
-**Data engineering** is structurally different:
+## Why
 
-| Aspect | Software Engineering | Data Engineering |
-|--------|---------------------|------------------|
-| **Where is the logic?** | Code in a repo | Distributed: SQL in views, DAX in measures, PySpark in notebooks, YAML in pipelines |
-| **Dependencies** | Explicit (package.json) | Implicit, cross-platform, often undocumented |
-| **Environment** | Relatively homogeneous | Heterogeneous: Databricks, Fabric, Power BI, legacy ETL tools... |
-| **Who's involved?** | Developers | Engineers, analysts, stewards, business users |
+In data engineering, context is scattered: SQL in views, DAX in Power BI, PySpark in notebooks, YAML in pipelines. There's no single repo to read.
 
-The context is more fragmented, more opaque. An AI agent can't just "read the repo" — because there is no single repo.
-
-**ADE bridges this gap** by extracting metadata from all your platforms and exposing it as a unified, queryable knowledge graph via MCP.
+ADE collects this context and makes it queryable — so AI agents can actually help.
 
 > "The context is the product. The agent is the engine. The human is the pilot."
 
@@ -36,9 +32,13 @@ python -m ade_app.mcp_server.server
 # 3. Configure in Claude Code (see below)
 ```
 
-## Use with Claude Code
+## Use with Claude
 
-Add ADE to your Claude Code MCP settings (`~/.claude/mcp.json`):
+ADE works with any Claude client that supports MCP (Model Context Protocol).
+
+### Claude Code
+
+Add to `~/.claude/mcp.json`:
 
 ```json
 {
@@ -52,7 +52,27 @@ Add ADE to your Claude Code MCP settings (`~/.claude/mcp.json`):
 }
 ```
 
-Then in Claude Code you can:
+### Claude Desktop
+
+Add to your config file:
+- **Windows**: `%APPDATA%\Claude\claude_desktop_config.json`
+- **Mac**: `~/Library/Application Support/Claude/claude_desktop_config.json`
+
+```json
+{
+  "mcpServers": {
+    "ade": {
+      "command": "python",
+      "args": ["-m", "ade_app.mcp_server.server"],
+      "cwd": "C:\\path\\to\\ade-core"
+    }
+  }
+}
+```
+
+Restart Claude Desktop after saving.
+
+### Then you can ask:
 
 ```
 "What notebooks do we have in the demo environment?"
