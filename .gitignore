@@ -65,5 +65,8 @@ temp/
 # Session tracking (personal)
 .claude_sessions/
 
+# Claude Code local settings
+.claude/
+
 # Project data
 _data/

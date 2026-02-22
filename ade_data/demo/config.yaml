@@ -1,0 +1,18 @@
+# ADE Demo Environment Configuration
+# This is a synthetic demo environment with sample data
+
+environment:
+  name: "ADE Demo"
+  description: "Synthetic demo environment for testing and learning"
+  mcp_enabled: true
+
+platforms:
+  databricks:
+    enabled: true
+    description: "Sample Databricks notebooks and jobs"
+
+  # Coming soon
+  powerbi:
+    enabled: false
+  postgresql:
+    enabled: false

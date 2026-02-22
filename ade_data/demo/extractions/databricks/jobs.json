@@ -1,0 +1,50 @@
+[
+  {
+    "job_id": 101,
+    "name": "daily_sales_pipeline",
+    "tasks": [
+      {
+        "task_key": "ingest_raw",
+        "notebook_task": {
+          "notebook_path": "/Workspace/acme_corp/bronze/01_ingest_raw_sales"
+        }
+      },
+      {
+        "task_key": "clean_data",
+        "notebook_task": {
+          "notebook_path": "/Workspace/acme_corp/silver/02_clean_sales"
+        },
+        "depends_on": [{"task_key": "ingest_raw"}]
+      },
+      {
+        "task_key": "aggregate",
+        "notebook_task": {
+          "notebook_path": "/Workspace/acme_corp/gold/03_aggregate_sales"
+        },
+        "depends_on": [{"task_key": "clean_data"}]
+      }
+    ],
+    "schedule": {
+      "quartz_cron_expression": "0 0 6 * * ?",
+      "timezone_id": "Europe/Rome"
+    },
+    "creator_user_name": "data.engineer@acme.com"
+  },
+  {
+    "job_id": 102,
+    "name": "customer_enrichment",
+    "tasks": [
+      {
+        "task_key": "enrich_customers",
+        "notebook_task": {
+          "notebook_path": "/Workspace/acme_corp/silver/04_enrich_customers"
+        }
+      }
+    ],
+    "schedule": {
+      "quartz_cron_expression": "0 0 7 * * ?",
+      "timezone_id": "Europe/Rome"
+    },
+    "creator_user_name": "data.engineer@acme.com"
+  }
+]

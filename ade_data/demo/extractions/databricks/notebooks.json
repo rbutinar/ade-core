@@ -1,0 +1,37 @@
+[
+  {
+    "name": "01_ingest_raw_sales",
+    "path": "/Workspace/acme_corp/bronze/01_ingest_raw_sales",
+    "language": "PYTHON",
+    "object_type": "notebook",
+    "source_code": "# Databricks notebook source\n# MAGIC %md\n# MAGIC # Ingest Raw Sales Data\n# MAGIC Load daily sales transactions from source system\n\n# COMMAND ----------\n\nfrom pyspark.sql import functions as F\n\n# Configuration\nSOURCE_PATH = \"/mnt/raw/sales/\"\nTARGET_TABLE = \"bronze.raw_sales\"\n\n# COMMAND ----------\n\n# Read raw CSV files\ndf_raw = spark.read.format(\"csv\") \\\n    .option(\"header\", \"true\") \\\n    .option(\"inferSchema\", \"true\") \\\n    .load(SOURCE_PATH)\n\nprint(f\"Loaded {df_raw.count()} records\")\n\n# COMMAND ----------\n\n# Add ingestion metadata\ndf_with_meta = df_raw \\\n    .withColumn(\"_ingested_at\", F.current_timestamp()) \\\n    .withColumn(\"_source_file\", F.input_file_name())\n\n# COMMAND ----------\n\n# Write to bronze table\ndf_with_meta.write \\\n    .format(\"delta\") \\\n    .mode(\"append\") \\\n    .saveAsTable(TARGET_TABLE)\n\nprint(f\"Written to {TARGET_TABLE}\")"
+  },
+  {
+    "name": "02_clean_sales",
+    "path": "/Workspace/acme_corp/silver/02_clean_sales",
+    "language": "PYTHON",
+    "object_type": "notebook",
+    "source_code": "# Databricks notebook source\n# MAGIC %md\n# MAGIC # Clean Sales Data\n# MAGIC Transform raw sales into clean, validated records\n\n# COMMAND ----------\n\nfrom pyspark.sql import functions as F\nfrom pyspark.sql.types import *\n\nSOURCE_TABLE = \"bronze.raw_sales\"\nTARGET_TABLE = \"silver.clean_sales\"\n\n# COMMAND ----------\n\n# Read from bronze\ndf = spark.table(SOURCE_TABLE)\n\n# COMMAND ----------\n\n# Data quality transformations\ndf_clean = df \\\n    .filter(F.col(\"amount\").isNotNull()) \\\n    .filter(F.col(\"amount\") > 0) \\\n    .withColumn(\"sale_date\", F.to_date(\"sale_date\")) \\\n    .withColumn(\"amount\", F.col(\"amount\").cast(\"decimal(18,2)\")) \\\n    .withColumn(\"customer_id\", F.upper(F.trim(\"customer_id\"))) \\\n    .dropDuplicates([\"transaction_id\"])\n\n# COMMAND ----------\n\n# Write to silver\ndf_clean.write \\\n    .format(\"delta\") \\\n    .mode(\"overwrite\") \\\n    .option(\"overwriteSchema\", \"true\") \\\n    .saveAsTable(TARGET_TABLE)\n\nprint(f\"Clean records: {df_clean.count()}\")"
+  },
+  {
+    "name": "03_aggregate_sales",
+    "path": "/Workspace/acme_corp/gold/03_aggregate_sales",
+    "language": "PYTHON",
+    "object_type": "notebook",
+    "source_code": "# Databricks notebook source\n# MAGIC %md\n# MAGIC # Aggregate Sales\n# MAGIC Create daily and monthly sales aggregations for reporting\n\n# COMMAND ----------\n\nfrom pyspark.sql import functions as F\n\nSOURCE_TABLE = \"silver.clean_sales\"\nDAILY_TABLE = \"gold.daily_sales\"\nMONTHLY_TABLE = \"gold.monthly_sales\"\n\n# COMMAND ----------\n\ndf = spark.table(SOURCE_TABLE)\n\n# COMMAND ----------\n\n# Daily aggregation\ndf_daily = df.groupBy(\"sale_date\", \"product_category\") \\\n    .agg(\n        F.count(\"*\").alias(\"transaction_count\"),\n        F.sum(\"amount\").alias(\"total_amount\"),\n        F.avg(\"amount\").alias(\"avg_amount\"),\n        F.countDistinct(\"customer_id\").alias(\"unique_customers\")\n    )\n\ndf_daily.write.format(\"delta\").mode(\"overwrite\").saveAsTable(DAILY_TABLE)\n\n# COMMAND ----------\n\n# Monthly aggregation\ndf_monthly = df \\\n    .withColumn(\"sale_month\", F.date_trunc(\"month\", \"sale_date\")) \\\n    .groupBy(\"sale_month\", \"product_category\") \\\n    .agg(\n        F.count(\"*\").alias(\"transaction_count\"),\n        F.sum(\"amount\").alias(\"total_amount\"),\n        F.avg(\"amount\").alias(\"avg_amount\"),\n        F.countDistinct(\"customer_id\").alias(\"unique_customers\")\n    )\n\ndf_monthly.write.format(\"delta\").mode(\"overwrite\").saveAsTable(MONTHLY_TABLE)\n\nprint(\"Aggregations complete\")"
+  },
+  {
+    "name": "04_enrich_customers",
+    "path": "/Workspace/acme_corp/silver/04_enrich_customers",
+    "language": "PYTHON",
+    "object_type": "notebook",
+    "source_code": "# Databricks notebook source\n# MAGIC %md\n# MAGIC # Enrich Customer Data\n# MAGIC Join customer demographics with transaction history\n\n# COMMAND ----------\n\nfrom pyspark.sql import functions as F\n\nCUSTOMERS_TABLE = \"bronze.raw_customers\"\nSALES_TABLE = \"silver.clean_sales\"\nTARGET_TABLE = \"silver.enriched_customers\"\n\n# COMMAND ----------\n\ndf_customers = spark.table(CUSTOMERS_TABLE)\ndf_sales = spark.table(SALES_TABLE)\n\n# COMMAND ----------\n\n# Calculate customer metrics\ndf_metrics = df_sales.groupBy(\"customer_id\") \\\n    .agg(\n        F.count(\"*\").alias(\"total_transactions\"),\n        F.sum(\"amount\").alias(\"lifetime_value\"),\n        F.min(\"sale_date\").alias(\"first_purchase\"),\n        F.max(\"sale_date\").alias(\"last_purchase\")\n    )\n\n# COMMAND ----------\n\n# Join with customer demographics\ndf_enriched = df_customers \\\n    .join(df_metrics, \"customer_id\", \"left\") \\\n    .withColumn(\"customer_segment\", \n        F.when(F.col(\"lifetime_value\") > 10000, \"Premium\")\n         .when(F.col(\"lifetime_value\") > 1000, \"Regular\")\n         .otherwise(\"New\"))\n\ndf_enriched.write.format(\"delta\").mode(\"overwrite\").saveAsTable(TARGET_TABLE)"
+  },
+  {
+    "name": "utilities",
+    "path": "/Workspace/acme_corp/shared/utilities",
+    "language": "PYTHON",
+    "object_type": "notebook",
+    "source_code": "# Databricks notebook source\n# MAGIC %md\n# MAGIC # Shared Utilities\n# MAGIC Common functions used across notebooks\n\n# COMMAND ----------\n\ndef get_table_stats(table_name: str) -> dict:\n    \"\"\"Get basic statistics for a Delta table.\"\"\"\n    df = spark.table(table_name)\n    return {\n        \"table\": table_name,\n        \"row_count\": df.count(),\n        \"column_count\": len(df.columns),\n        \"columns\": df.columns\n    }\n\n# COMMAND ----------\n\ndef validate_not_empty(df, name: str):\n    \"\"\"Raise error if DataFrame is empty.\"\"\"\n    if df.count() == 0:\n        raise ValueError(f\"{name} is empty!\")\n    return df\n\n# COMMAND ----------\n\ndef log_metrics(stage: str, metrics: dict):\n    \"\"\"Log pipeline metrics.\"\"\"\n    import json\n    print(f\"[{stage}] {json.dumps(metrics)}\")"
+  }
+]

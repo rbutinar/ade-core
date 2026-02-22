@@ -1,0 +1,14 @@
+# ADE Core - Minimal Requirements
+
+# MCP Server (Model Context Protocol)
+mcp>=1.2.0
+
+# Configuration
+pyyaml>=6.0
+python-dotenv>=1.0.0
+
+# HTTP client (for Databricks API)
+requests>=2.31.0
+
+# CLI
+click>=8.1.0
