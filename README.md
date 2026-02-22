@@ -1,10 +1,23 @@
 # ADE Core - Agentic Data Engineering Framework
 
-**ADE** (Analytics Data Environment) is a lightweight framework that enables **autonomous data engineering** workflows using AI agents like Claude Code.
+**ADE** (Analytics Data Environment) makes the implicit context of data platforms explicit and queryable — enabling AI agents to reason about architectures that span multiple tools, teams, and technologies.
 
-## What is Agentic Data Engineering?
+## Why Data Engineering Needs a Different Approach
 
-It's not about AI writing code for you. It's about giving AI agents the **context** they need to reason about your entire data architecture — then letting them work with high autonomy while you supervise.
+In **software engineering**, AI agents can work end-to-end: the code is in a repo, dependencies are declared, environments are homogeneous. Tools like Claude Code and Cursor thrive here.
+
+**Data engineering** is structurally different:
+
+| Aspect | Software Engineering | Data Engineering |
+|--------|---------------------|------------------|
+| **Where is the logic?** | Code in a repo | Distributed: SQL in views, DAX in measures, PySpark in notebooks, YAML in pipelines |
+| **Dependencies** | Explicit (package.json) | Implicit, cross-platform, often undocumented |
+| **Environment** | Relatively homogeneous | Heterogeneous: Databricks, Fabric, Power BI, legacy ETL tools... |
+| **Who's involved?** | Developers | Engineers, analysts, stewards, business users |
+
+The context is more fragmented, more opaque. An AI agent can't just "read the repo" — because there is no single repo.
+
+**ADE bridges this gap** by extracting metadata from all your platforms and exposing it as a unified, queryable knowledge graph via MCP.
 
 > "The context is the product. The agent is the engine. The human is the pilot."
 
@@ -97,11 +110,34 @@ ade-core/
 
 ## Supported Platforms
 
+### ADE Core (this repo)
+
 | Platform | Status | Features |
 |----------|--------|----------|
 | Databricks | ✅ Ready | Notebooks, jobs, source code extraction |
 | Power BI | 🔜 Coming | Datasets, measures, DAX |
 | PostgreSQL | 🔜 Coming | Tables, views, SQL definitions |
+
+### ADE Extended (private)
+
+Additional platforms available in the extended version:
+
+| Platform | Features |
+|----------|----------|
+| Microsoft Fabric | Warehouses, lakehouses, pipelines, notebooks, semantic models |
+| Talend | Jobs, components, data flows |
+| Tableau | Workbooks, datasources, worksheets |
+| SQL Server / SSIS | Packages, data flows, connections |
+| Cloudera | Hive tables, Spark jobs |
+| Synapse | Pools, procedures, views |
+
+The extended version also includes:
+- SQL Server metadata store with full lineage graph
+- Cross-platform impact analysis
+- AI-powered documentation generation
+- Streamlit dashboard
+
+*Interested? Contact: roberto.butinar@gmail.com*
 
 ## The Autonomous Data Engineer
 
