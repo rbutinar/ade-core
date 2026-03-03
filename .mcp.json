@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "ade-core": {
+      "command": "python",
+      "args": ["-m", "ade_app.mcp_server.server"]
+    }
+  }
+}

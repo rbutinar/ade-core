@@ -62,6 +62,9 @@ tmp/
 temp/
 *.tmp
 
+# Generated SQLite catalogs
+ade_data/*/catalog.db
+
 # Session tracking (personal)
 .claude_sessions/
 
