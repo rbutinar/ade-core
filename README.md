@@ -4,18 +4,18 @@
 
 ## What it does
 
-- **Extract** → Pull metadata from Databricks notebooks, jobs, and source code
-- **Search** → Find any data asset across your platforms from Claude
-- **Trace** → Analyze dependencies between notebooks and tables
-- **Understand** → Let AI reason about your architecture without reading 100 files
+- **Extract** → Pull metadata from Databricks notebooks and Power BI semantic models
+- **Parse** → Analyze source code to discover table lineage and DAX expressions
+- **Search** → Find any data asset across platforms from Claude
+- **Trace** → Map dependencies between notebooks, tables, and measures
 
 ## Why
 
 In data engineering, context is scattered: SQL in views, DAX in Power BI, PySpark in notebooks, YAML in pipelines. There's no single repo to read.
 
-ADE collects this context and makes it queryable — so AI agents can actually help.
+ADE collects this context into a single SQLite catalog and makes it queryable — so AI agents can actually help.
 
-## Quick Start (3 steps)
+## Quick Start
 
 ```bash
 # 1. Clone and install
@@ -23,11 +23,10 @@ git clone https://github.com/rbutinar/ade-core.git
 cd ade-core
 pip install -r requirements.txt
 
-# 2. Test with demo data
-python -m ade_app.mcp_server.server
-# Server starts with pre-loaded synthetic demo data
+# 2. Build the demo catalog
+python -m ade_app.scripts.build_demo_catalog
 
-# 3. Configure in Claude Code (see below)
+# 3. Open with Claude Code — MCP server starts automatically
 ```
 
 ## Use with Claude
@@ -36,18 +35,11 @@ ADE works with any Claude client that supports MCP (Model Context Protocol).
 
 ### Claude Code
 
-Add to `~/.claude/mcp.json`:
+The `.mcp.json` in the repo auto-starts the server. Just open the project:
 
-```json
-{
-  "mcpServers": {
-    "ade": {
-      "command": "python",
-      "args": ["-m", "ade_app.mcp_server.server"],
-      "cwd": "/path/to/ade-core"
-    }
-  }
-}
+```bash
+cd ade-core
+claude
 ```
 
 ### Claude Desktop
@@ -62,50 +54,66 @@ Add to your config file:
     "ade": {
       "command": "python",
       "args": ["-m", "ade_app.mcp_server.server"],
-      "cwd": "C:\\path\\to\\ade-core"
+      "cwd": "/path/to/ade-core"
     }
   }
 }
 ```
 
-Restart Claude Desktop after saving.
-
 ### Then you can ask:
 
 ```
 "What notebooks do we have in the demo environment?"
-"Show me the source code of the sales aggregation notebook"
-"What tables does the 01_ingest_raw_sales notebook write to?"
+"Show me the DAX for Total Sales"
+"What tables does 01_ingest_raw_sales write to?"
+"Find all measures in the Power BI model"
+"Trace the lineage from bronze to gold"
 ```
 
 ## Available MCP Tools
 
 | Tool | Description |
 |------|-------------|
-| `get_ade_overview()` | What is ADE and how to use it |
-| `list_environments()` | See available environments |
-| `set_environment(id)` | Switch to different environment |
-| `get_environment_info()` | Current environment details |
-| `search_catalog(query)` | Find objects by name |
-| `get_object_details(name, platform)` | Full metadata with source code |
-| `get_platform_stats()` | Object counts by platform |
-| `get_notebook_lineage(name)` | Analyze notebook dependencies |
+| `get_environment_info()` | Environment overview (platforms, stats, backend) |
+| `search_catalog(query)` | Full-text search across all platforms |
+| `get_object_details(name)` | Full metadata, source code, and children |
+| `get_notebook_lineage(name)` | Input/output table dependencies |
+
+## Supported Platforms
+
+| Platform | Status | What it parses |
+|----------|--------|----------------|
+| Databricks | Ready | `.py` notebooks from disk — extracts table lineage (inputs/outputs) with variable resolution |
+| Power BI | Ready | TMDL files from PBIP projects — tables, columns, measures (DAX), relationships |
+| PostgreSQL | Coming | Tables, views, SQL definitions |
 
 ## Extract Your Own Data
 
-Extract metadata from your Databricks workspace:
+### Databricks notebooks (local files)
+
+Place your exported `.py` notebooks under `ade_data/<env>/inputs/databricks/` and rebuild:
+
+```bash
+python -m ade_app.scripts.build_demo_catalog
+```
+
+### Power BI semantic model (TMDL)
+
+Place your PBIP definition folder under `ade_data/<env>/inputs/powerbi/` and rebuild:
+
+```bash
+python -m ade_app.platforms.powerbi.extractor \
+    --path ade_data/my_env/inputs/powerbi/MyModel.SemanticModel/definition \
+    --db ade_data/my_env/catalog.db
+```
+
+### Databricks via API (optional)
 
 ```bash
 python -m ade_app.platforms.databricks.extractor \
     --host https://your-workspace.azuredatabricks.net \
     --token your_databricks_token \
-    --output ade_data/my_env/extractions/databricks
-```
-
-Then set the environment in Claude Code:
-```
-"Switch to my_env environment"
-"What notebooks do I have?"
+    --db ade_data/my_env/catalog.db
 ```
 
 ## Project Structure
@@ -113,30 +121,38 @@ Then set the environment in Claude Code:
 ```
 ade-core/
 ├── ade_app/
-│   ├── mcp_server/          # MCP server for AI agents
-│   └── platforms/
-│       └── databricks/      # Databricks extractor
+│   ├── core/                     # CatalogDB (SQLite backend)
+│   ├── platforms/
+│   │   ├── databricks/           # Notebook parser + I/O lineage
+│   │   ├── powerbi/              # TMDL parser + extractor
+│   │   └── postgresql/           # Coming soon
+│   ├── mcp_server/               # MCP server for AI agents
+│   └── scripts/                  # CLI utilities
 ├── ade_data/
-│   └── demo/                # Demo environment with synthetic data
-│       └── extractions/
-│           └── databricks/
-│               ├── notebooks.json
-│               └── jobs.json
+│   └── demo/                     # Demo environment (synthetic data)
+│       └── inputs/
+│           ├── databricks/       # .py notebook files
+│           └── powerbi/          # TMDL definition files
+├── tests/                        # 117 tests
+├── .mcp.json                     # Auto-start MCP server config
 ├── requirements.txt
 └── README.md
 ```
 
-## Supported Platforms
+## Demo Data
 
-### ADE Core (this repo)
+The demo environment contains a synthetic **Acme Corp** data platform:
 
-| Platform | Status | Features |
-|----------|--------|----------|
-| Databricks | ✅ Ready | Notebooks, jobs, source code extraction |
-| Power BI | 🔜 Coming | Datasets, measures, DAX |
-| PostgreSQL | 🔜 Coming | Tables, views, SQL definitions |
+**Databricks** — 5 PySpark notebooks implementing a Lakehouse pipeline:
+```
+/mnt/raw/sales/ → bronze.raw_sales → silver.clean_sales → gold.daily_sales
+                                                         → gold.monthly_sales
+bronze.raw_customers + silver.clean_sales → silver.enriched_customers
+```
 
-### ADE Extended (private)
+**Power BI** — AcmeSales semantic model with 4 tables, 5 DAX measures, 3 relationships.
+
+## ADE Extended (private)
 
 Additional platforms available in the extended version:
 
@@ -149,23 +165,7 @@ Additional platforms available in the extended version:
 | Cloudera | Hive tables, Spark jobs |
 | Synapse | Pools, procedures, views |
 
-The extended version also includes:
-
-**Infrastructure:**
-- SQL Server metadata store with full lineage graph
-- Multi-environment management with secure credential isolation
-- Project templates and session tracking for continuity
-
-**Platform Skills (Claude commands):**
-- Databricks: deploy, run, status, query
-- Fabric: notebook deploy, SQL deploy, stored procedure execution, warehouse testing
-- Power BI: model creation and editing
-
-**Automation:**
-- Cross-platform impact analysis
-- AI-powered documentation generation
-- Platform backup and security scanning
-- Streamlit dashboard for visual exploration
+The extended version also includes SQL Server metadata store with full lineage graph, multi-environment management, platform deployment skills, cross-platform impact analysis, and a Streamlit dashboard.
 
 *Interested? Contact: roberto.butinar@gmail.com*
 
@@ -173,7 +173,7 @@ The extended version also includes:
 
 This project powers **The Autonomous Data Engineer** video series on YouTube, showing real agentic workflows for data platforms.
 
-- [YouTube Channel](https://youtube.com/@autonomous-data-engineer) *(coming soon)*
+- [YouTube Channel](https://youtube.com/@autonomous-data-engineer)
 
 ## License
 

@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-ADE Core is the open-source version of the ADE framework.
+ADE Core is the open-source version of the ADE framework (v0.2.0).
 A personal project by Roberto Butinar — providing the structured context that transforms AI agents from code assistants into autonomous data engineering partners.
 
 ## Repository Structure
@@ -10,25 +10,22 @@ A personal project by Roberto Butinar — providing the structured context that 
 ```
 ade-core/
 ├── ade_app/                      # Framework code
-│   ├── core/                     # Core services
+│   ├── core/                     # CatalogDB (SQLite backend)
 │   ├── platforms/                # Platform parsers
-│   │   ├── databricks/           # Databricks notebooks, jobs
-│   │   ├── powerbi/              # Power BI datasets, measures
-│   │   └── postgresql/           # PostgreSQL tables, views
-│   ├── mcp_server/               # MCP Server for AI agents
-│   ├── scripts/                  # CLI utilities
-│   └── docs/                     # Documentation
+│   │   ├── databricks/           # Notebook parser, I/O lineage, API extractor
+│   │   ├── powerbi/              # TMDL parser (tables, measures, relationships)
+│   │   └── postgresql/           # Coming soon
+│   ├── mcp_server/               # MCP Server for AI agents (v0.2.0)
+│   └── scripts/                  # CLI utilities (build_demo_catalog)
 │
 ├── ade_data/
-│   └── demo/                     # Demo environment (synthetic data)
+│   └── demo/                     # Demo environment (synthetic Acme Corp)
+│       └── inputs/
+│           ├── databricks/       # .py notebook files
+│           └── powerbi/          # TMDL definition files
 │
-├── docs/
-│   ├── getting-started/          # Setup guides
-│   └── podcast/                  # "The Autonomous Data Engineer" series
-│       ├── episodes/             # Episode scripts
-│       └── production/           # Recording guides
-│
-└── examples/                     # Usage examples
+├── tests/                        # 117 tests
+└── .mcp.json                     # Auto-start MCP server config
 ```
 
 ## Key Principles
@@ -37,6 +34,7 @@ ade-core/
 2. **No client data** - Only synthetic demo data
 3. **Open source** - Apache 2.0 license
 4. **Educational** - Powers the YouTube video series
+5. **File-based** - Both platforms parse local files, no API required for core usage
 
 ## Development Guidelines
 
@@ -44,18 +42,22 @@ ade-core/
 - All documentation in English
 - Demo data must be realistic but entirely synthetic
 - Never reference real client names or architectures
+- All parsers use stdlib only (no external dependencies beyond MCP)
 
 ## Quick Commands
 
 ```bash
+# Build demo catalog
+python -m ade_app.scripts.build_demo_catalog
+
 # Run MCP server
 python -m ade_app.mcp_server.server
 
 # Run tests
 pytest
 
-# Build docs
-mkdocs serve
+# Extract Power BI from TMDL
+python -m ade_app.platforms.powerbi.extractor --path <definition_dir> --db <catalog.db>
 ```
 
 ## Related
