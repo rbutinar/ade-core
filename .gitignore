@@ -70,6 +70,7 @@ ade_data/*/catalog.db
 
 # Claude Code local settings
 .claude/
+CLAUDE.md
 
 # Project data
 _data/
