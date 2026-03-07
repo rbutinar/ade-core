@@ -2,6 +2,8 @@
 
 **ADE** provides the structured context that transforms AI agents from code assistants into autonomous data engineering partners.
 
+![Web Catalog Walkthrough](docs/ade-core-web-catalog-walkthrough.gif)
+
 ## What it does
 
 - **Extract** → Pull metadata from Databricks notebooks and Power BI semantic models

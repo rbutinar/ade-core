@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-ADE Core is the open-source version of the ADE framework (v0.2.0).
+ADE Core is the open-source version of the ADE framework (v0.3.0).
 A personal project by Roberto Butinar — providing the structured context that transforms AI agents from code assistants into autonomous data engineering partners.
 
 ## Repository Structure
@@ -15,7 +15,7 @@ ade-core/
 │   │   ├── databricks/           # Notebook parser, I/O lineage, API extractor
 │   │   ├── powerbi/              # TMDL parser (tables, measures, relationships)
 │   │   └── postgresql/           # Coming soon
-│   ├── mcp_server/               # MCP Server for AI agents (v0.2.0)
+│   ├── mcp_server/               # MCP Server for AI agents
 │   ├── streamlit_app/            # Web catalog UI (beta)
 │   │   ├── Home.py               # Landing page
 │   │   └── pages/                # Platform Overview, Data Catalog, Object Details

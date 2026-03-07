@@ -517,7 +517,7 @@ async def get_ade_overview() -> dict:
     """
     return {
         "name": "ADE Core - Analytics Data Environment",
-        "version": "0.2.0",
+        "version": "0.3.0",
         "description": (
             "Open-source framework for agentic data engineering. "
             "Extracts metadata from data platforms and exposes it to AI agents via MCP."
